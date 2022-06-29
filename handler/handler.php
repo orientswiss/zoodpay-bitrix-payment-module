@@ -534,7 +534,7 @@ class ZoodPayHandler
                 'customer_dob' => $payerDOB,
                 'customer_email' => $payerEmail,
                 'customer_phone' => $payerPhone,
-                'customer_pid' => 0,
+                //'customer_pid' => 0,
                 'first_name' => $payerName,
                 'last_name' => $payerLName
 
