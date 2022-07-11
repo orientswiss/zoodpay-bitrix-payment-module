@@ -3,7 +3,7 @@ $MESS["SALE_HPS_ZP_NAME"] = "ZoodPay Платежный сервис";
 $MESS["SALE_HPS_ZP_USER"] = "Merchant Key";
 $MESS["SALE_HPS_ZP_PWD"] = "Merchant Secret";
 $MESS["SALE_HPS_ZP_SALT"] = "Merchant Salt";
-$MESS["SALE_HPS_ZP_API_URL"] = "ZoodPay API URL";
+$MESS["SALE_HPS_ZP_API_URL"] = "ZoodPay API Режим";
 $MESS["SALE_HPS_ZP_API_VER"] = "ZoodPay API версия";
 $MESS["SALE_HPS_ZP_BUSINESS"] = "Бизнес";
 $MESS["SALE_HPS_ZP_IDENTITY_TOKEN"] = "Identity";
@@ -72,3 +72,8 @@ $MESS["SALE_ZP_CANCELLED_STATUS"] = "Код статуса Отменено";
 $MESS["SALE_ZP_REFUND_INITIATED_STATUS"] = "Код статуса Возврат Инициирован";
 $MESS["SALE_ZP_REFUND_APPROVED_STATUS"] = "Код статуса Возврат Подтвержден";
 $MESS["SALE_ZP_REFUND_DECLINED_STATUS"] = "Код статуса Возврат Отклонен";
+
+$MESS["SALE_HPS_ZP_API_SANDBOX"] = "Sandbox";
+$MESS["SALE_HPS_ZP_API_LIVE"] = "Live";
+
+

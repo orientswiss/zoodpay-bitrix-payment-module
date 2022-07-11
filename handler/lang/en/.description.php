@@ -3,7 +3,7 @@ $MESS["SALE_HPS_ZP_NAME"] = "ZoodPay Payment Gateway";
 $MESS["SALE_HPS_ZP_USER"] = "Merchant Key";
 $MESS["SALE_HPS_ZP_PWD"] = "Merchant Secret";
 $MESS["SALE_HPS_ZP_SALT"] = "Merchant Salt";
-$MESS["SALE_HPS_ZP_API_URL"] = "ZoodPay API URL";
+$MESS["SALE_HPS_ZP_API_URL"] = "ZoodPay API Mode";
 $MESS["SALE_HPS_ZP_API_VER"] = "ZoodPay API Version";
 $MESS["SALE_HPS_ZP_BUSINESS"] = "Business";
 $MESS["SALE_HPS_ZP_IDENTITY_TOKEN"] = "Identity";
@@ -71,3 +71,9 @@ $MESS["SALE_ZP_CANCELLED_STATUS"] = "Status Code for Cancelled";
 $MESS["SALE_ZP_REFUND_INITIATED_STATUS"] = "Status Code for Refund Initiated";
 $MESS["SALE_ZP_REFUND_APPROVED_STATUS"] = "Status Code for Refund Approved";
 $MESS["SALE_ZP_REFUND_DECLINED_STATUS"] = "Status Code for Refund Declined";
+
+$MESS["SALE_HPS_ZP_API_SANDBOX"] = "Sandbox";
+$MESS["SALE_HPS_ZP_API_LIVE"] = "Live";
+
+
+

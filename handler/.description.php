@@ -20,6 +20,33 @@ $data = [
     'IS_AVAILABLE' => Manager::HANDLER_AVAILABLE_TRUE,
     'SORT' => 1000,
     'CODES' => [
+        'ZOODPAY_API_URL' => [
+            'NAME' => Loc::getMessage('SALE_HPS_ZP_API_URL'),
+            'SORT' => 90,
+            'INPUT' => [
+                'TYPE' => 'ENUM',
+
+                'OPTIONS' => [
+                    'https://sandbox-api.zoodpay.com/' => Loc::getMessage('SALE_HPS_ZP_API_SANDBOX'),
+                    'https://api.zoodpay.com/' => Loc::getMessage('SALE_HPS_ZP_API_LIVE'),
+                ],
+
+            ],
+            'GROUP' => Loc::getMessage('GENERAL_SETTINGS_ZOODPAY'),
+        ],
+        'ZOODPAY_API_VER' => [
+            'NAME' => Loc::getMessage('SALE_HPS_ZP_API_VER'),
+            'SORT' => 95,
+            'INPUT' => [
+                'TYPE' => 'ENUM',
+
+                'OPTIONS' => [
+                    'v0' => "V0",
+
+                ]
+            ],
+            'GROUP' => Loc::getMessage('GENERAL_SETTINGS_ZOODPAY'),
+        ],
         'ZOODPAY_USER' => [
             'NAME' => Loc::getMessage('SALE_HPS_ZP_USER'),
             'SORT' => 100,
@@ -35,17 +62,6 @@ $data = [
             'SORT' => 210,
             'GROUP' => Loc::getMessage('GENERAL_SETTINGS_ZOODPAY'),
         ],
-        'ZOODPAY_API_URL' => [
-            'NAME' => Loc::getMessage('SALE_HPS_ZP_API_URL'),
-            'SORT' => 230,
-            'GROUP' => Loc::getMessage('GENERAL_SETTINGS_ZOODPAY'),
-        ],
-        'ZOODPAY_API_VER' => [
-            'NAME' => Loc::getMessage('SALE_HPS_ZP_API_VER'),
-            'SORT' => 250,
-            'GROUP' => Loc::getMessage('GENERAL_SETTINGS_ZOODPAY'),
-        ],
-
         'PAYMENT_ID' => [
             'NAME' => Loc::getMessage('SALE_HPS_ZP_ORDER_ID'),
             'SORT' => 400,

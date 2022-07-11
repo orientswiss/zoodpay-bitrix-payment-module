@@ -36,7 +36,7 @@ Please see [CHANGELOG](CHANGELOG.md) for more information what has changed recen
 ## Contributing
 Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
 
-##Support 
+## Support 
 For any inquiry write to integration@zoodpay.com with a detailed description of the issue.
 ## Credits
 - [ZoodPay](https://github.com/orientswiss)
