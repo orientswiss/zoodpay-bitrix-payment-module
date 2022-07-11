@@ -285,9 +285,10 @@ class zoodpay_payment extends CModule
         $DB->Query("
 			CREATE TABLE IF NOT EXISTS `zoodpay_config` (
 		`id` int AUTO_INCREMENT,
-        `Config`  longtext NOT NULL,
+		`payment_system_id`  varchar(20) NOT NULL,
+        `config`  longtext NOT NULL,
       PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=2;");
-        $DB->Query("
+       $DB->Query("
 			CREATE TABLE IF NOT EXISTS `zoodpay_transactions` (
 		`id` int AUTO_INCREMENT ,
         `transaction_id`           varchar(100) null,
@@ -295,6 +296,7 @@ class zoodpay_payment extends CModule
         `amount`                   varchar(50)  null,
         `currency`                 varchar(50)  null,
         `selected_service`         varchar(50)  null,
+		`payment_system_id`       varchar(20) NOT NULL,
         `payment_id`               varchar(100) null,
         `refund_id`                varchar(100) null,
         `status`                   varchar(50)  null,
@@ -306,6 +308,13 @@ class zoodpay_payment extends CModule
     
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=2;"
         );
+
+        $result = $DB->Query("SHOW COLUMNS FROM `zoodpay_transactions` LIKE 'payment_system_id';");
+
+        if($result->SelectedRowsCount() == 0) {
+            $DB->Query("alter table `zoodpay_transactions` add `payment_system_id` varchar(20) not null after selected_service;");
+        }
+
         $DB->Query("
         CREATE TABLE IF NOT EXISTS `zoodpay_refunds` (
     `id` int AUTO_INCREMENT ,

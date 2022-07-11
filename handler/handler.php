@@ -214,6 +214,7 @@ class ZoodPayHandler
                         'transaction_id' => $curlResponseJsonDecode['transaction_id'],
                         'status' => $zDataHelper::Pending_Payment,
                         'selected_service' => $this->prePaymentSetting['TDM']['order']['service_code'],
+                        'payment_system_id' => $payment->getField("PAY_SYSTEM_ID"),
                         'payment_id' => $payment->getId(),
                         'refund_id' => '',
                         'url' => $curlResponseJsonDecode['payment_url'],
@@ -303,81 +304,84 @@ class ZoodPayHandler
 
 
             $zDataHelper = new DataHelper();
-            $configResponse = $zDataHelper->getDataBaseData(DataHelper::ZOODPAY_CONFIG_TABLE, DataHelper::ZOODPAY_CONFIG_COLUMN, false, '', '');
-            $config = (json_decode($configResponse['Config'], true)['config']);
-            $paymentSetting = (json_decode($configResponse['Config'], true)['setting']);
+            $configResponse = $zDataHelper->getDataBaseData(DataHelper::ZOODPAY_CONFIG_TABLE, DataHelper::ZOODPAY_CONFIG_COLUMN, true, DataHelper::PAYMENT_SYSTEM_ID, $payment->getField("PAY_SYSTEM_ID"));
+            if(isset($configResponse['config'])){
+                $config = (json_decode($configResponse['config'], true)['config']);
+                $paymentSetting = (json_decode($configResponse['config'], true)['setting']);
 
-            $this->prePaymentSetting['country_code'] = $paymentSetting['country_code'];
-            $this->prePaymentSetting['location_id'] = $paymentSetting['location_id'];
-
-
-            $serviceAvailability = false;
+                $this->prePaymentSetting['country_code'] = $paymentSetting['country_code'];
+                $this->prePaymentSetting['location_id'] = $paymentSetting['location_id'];
 
 
-            $order = $payment->getOrder();
+                $serviceAvailability = false;
 
-            $quoteTotal = $order->getPrice();
 
-            $availableServiceResult = null;
-            $k = 0;
-            $lang = Application::getInstance()->getContext()->getLanguage();
-            foreach ($config as $i => $iValue) {
+                $order = $payment->getOrder();
 
-                if (($quoteTotal >= $iValue['min_limit']) && ($quoteTotal <= $iValue['max_limit'])) {
-                    $serviceName = $iValue['service_name'];
-                    $serviceCode = $iValue['service_code'];
-                    $imgSrc = Application::getPersonalRoot()."/modules/zoodpay.payment/handler/asset/img/".$serviceCode."_".$lang.".png";
-                    if (isset($iValue['instalments'])) {
+                $quoteTotal = $order->getPrice();
 
-                        $monthlyPayment = round($quoteTotal / $iValue['instalments'], 2) . ' ' . $this->prePaymentSetting['CURRENCY'];
+                $availableServiceResult = null;
+                $k = 0;
+                $lang = Application::getInstance()->getContext()->getLanguage();
+                foreach ($config as $i => $iValue) {
 
-                        $availableServiceResult[$serviceCode] = [
-                            "service_code" => $serviceCode,
-                            "service_text" => "$serviceName ".Loc::getMessage('text_of') . "$monthlyPayment "  ,
-                            "service_type" => $serviceName,
-                            "service_installment_bool" => true,
-                            "service_installment" => $iValue['instalments'],
-                            "service_description" => $iValue['description'],
-                            "img_src" => $imgSrc
-                        ];
-                        $k++;
-                        $serviceAvailability = true;
-                    } else {
+                    if (($quoteTotal >= $iValue['min_limit']) && ($quoteTotal <= $iValue['max_limit'])) {
+                        $serviceName = $iValue['service_name'];
+                        $serviceCode = $iValue['service_code'];
+                        $imgSrc = Application::getPersonalRoot()."/modules/zoodpay.payment/handler/asset/img/".$serviceCode."_".$lang.".png";
+                        if (isset($iValue['instalments'])) {
 
-                        $availableServiceResult[$serviceCode] = [
-                            "service_code" => $serviceCode,
-                            "service_installment_bool" => false,
-                            "service_text" => "$serviceName " ,
-                            "service_type" => $serviceName,
-                            "service_description" => $iValue['description'],
-                            "img_src" => $imgSrc
-                        ];
-                        $k++;
-                        $serviceAvailability = true;
+                            $monthlyPayment = round($quoteTotal / $iValue['instalments'], 2) . ' ' . $this->prePaymentSetting['CURRENCY'];
+
+                            $availableServiceResult[$serviceCode] = [
+                                "service_code" => $serviceCode,
+                                "service_text" => "$serviceName ".Loc::getMessage('text_of') . "$monthlyPayment "  ,
+                                "service_type" => $serviceName,
+                                "service_installment_bool" => true,
+                                "service_installment" => $iValue['instalments'],
+                                "service_description" => $iValue['description'],
+                                "img_src" => $imgSrc
+                            ];
+                            $k++;
+                            $serviceAvailability = true;
+                        } else {
+
+                            $availableServiceResult[$serviceCode] = [
+                                "service_code" => $serviceCode,
+                                "service_installment_bool" => false,
+                                "service_text" => "$serviceName " ,
+                                "service_type" => $serviceName,
+                                "service_description" => $iValue['description'],
+                                "img_src" => $imgSrc
+                            ];
+                            $k++;
+                            $serviceAvailability = true;
+                        }
+
+
                     }
-
-
                 }
-            }
-            if (count($availableServiceResult) == 1) {
-                $this->prePaymentSetting['only_service'] = true;
-                $this->prePaymentSetting['selected_service'] = $availableServiceResult[0]['service_code'];
-            } else {
-                $this->prePaymentSetting['only_service'] = false;
-                $this->prePaymentSetting['selected_service'] = '';
-            }
-
-
-            if ($serviceAvailability) {
-                foreach ($availableServiceResult as $keyS => $valueS) {
-                    $this->prePaymentSetting['services'][$keyS] = $valueS;
+                if (count($availableServiceResult) == 1) {
+                    $this->prePaymentSetting['only_service'] = true;
+                    $this->prePaymentSetting['selected_service'] = $availableServiceResult[0]['service_code'];
+                } else {
+                    $this->prePaymentSetting['only_service'] = false;
+                    $this->prePaymentSetting['selected_service'] = '';
                 }
+
+
+                if ($serviceAvailability) {
+                    foreach ($availableServiceResult as $keyS => $valueS) {
+                        $this->prePaymentSetting['services'][$keyS] = $valueS;
+                    }
+                }
+
             }
 
-        }
 
-
-        return true;
+            return true;
+            }
+          return false;
     }
 
     /**
@@ -487,7 +491,7 @@ class ZoodPayHandler
                 $locationId = $valueL;
             }
 
-            //Change the pickup address to PICKUP for the field
+            //TODO: Change the pickup address to PICKUP for the field
             if ($payerAddress == "" || $payerAddress == null) {
                 $payerAddress = $this->getWarehouseAddress($order->getId());
             }
@@ -534,7 +538,6 @@ class ZoodPayHandler
                 'customer_dob' => $payerDOB,
                 'customer_email' => $payerEmail,
                 'customer_phone' => $payerPhone,
-                'customer_pid' => 0,
                 'first_name' => $payerName,
                 'last_name' => $payerLName
 
@@ -584,7 +587,7 @@ class ZoodPayHandler
             ];
 
 
-            $orderString = implode("|", array($this->prePaymentSetting['merchant_key'], $order->getId(), $order->getPrice(), $this->prePaymentSetting['CURRENCY'], $this->prePaymentSetting['country_code'], $this->prePaymentSetting['merchant_salt']));
+            $orderString = implode("|", array($this->prePaymentSetting['merchant_key'], $order->getId(), $order->getPrice() - $order->getSumPaid() , $this->prePaymentSetting['CURRENCY'], $this->prePaymentSetting['country_code'], $this->prePaymentSetting['merchant_salt']));
 
 
             /** @var  $orderSignature -- Create Signature Based on ZoodPay API DOC */
@@ -597,7 +600,7 @@ class ZoodPayHandler
 
             $order_Data = [
 
-                'amount' => $order->getPrice(),
+                'amount' => $order->getPrice() - $order->getSumPaid(),
                 'currency' => $this->prePaymentSetting['CURRENCY'],
                 'discount_amount' => $order->getDiscountPrice(),
                 'lang' => $this->prePaymentSetting['ZOODPAY_LC'],
@@ -806,31 +809,33 @@ class ZoodPayHandler
     public function getDescription()
     {
         $zDataHelper = new DataHelper();
-        $zDataHelper->checkApiHealth();
-      $genError = false;
+
         if ( ($_POST['ACTION_FILE'] == "zoodpay") && ($_POST['Update'] == "Y") )
         {
+            $payID = $_REQUEST['ID'];
+            $zDataHelper->checkApiHealth($payID);
+            $genError = false;
             $payName = $zDataHelper::paymentCode;
-            $queryResult = $zDataHelper->getDataBaseData(DataHelper::b_sale_pay_system_action, DataHelper::PAY_SYSTEM_ID, true, DataHelper::ACTION_FILE, $payName);
+            $queryResult =  $zDataHelper->getTotalRowData(DataHelper::b_sale_pay_system_action,DataHelper::PAY_SYSTEM_ID,$payID);
+            if (isset($queryResult)) {
+                $apiStatusArray = $zDataHelper->getDataBaseData(DataHelper::b_sale_bizval, DataHelper::PROVIDER_VALUE, true, DataHelper::CODE_KEY, DataHelper::ZOODPAY_CHECK_HEALTHY);
 
-            $apiStatusArray = $zDataHelper->getDataBaseData(DataHelper::b_sale_bizval, DataHelper::PROVIDER_VALUE, true, DataHelper::CODE_KEY, DataHelper::ZOODPAY_CHECK_HEALTHY);
+                if ($apiStatusArray['PROVIDER_VALUE'] != "N") {
+                    if (isset($queryResult)) {
 
-            if ($apiStatusArray['PROVIDER_VALUE'] != "N") {
-                if (isset($queryResult)) {
-                    $payID = $queryResult['PAY_SYSTEM_ID'];
-                    $consumerKey = "PAYSYSTEM_" . $payID;
-                    $merchantData = array(
-                        'merchantUserKey' => BusinessValue::get(DataHelper::ZOODPAY_USER, $consumerKey),
-                        'merchantSecret' => BusinessValue::get(DataHelper::ZOODPAY_PWD, $consumerKey),
-                        'SALT' => BusinessValue::get(DataHelper::ZOODPAY_SALT, $consumerKey),
-                        'API_URL' => BusinessValue::get(DataHelper::ZOODPAY_API_URL, $consumerKey),
-                        'API_Ver' => BusinessValue::get(DataHelper::ZOODPAY_API_VER, $consumerKey),
-                        'SITE_ID' => BusinessValue::get(DataHelper::ZOODPAY_SITE_ID, $consumerKey),
-                        'ZOODPAY_CC' => BusinessValue::get(DataHelper::ZOODPAY_CC, $consumerKey),
-                        'ZOODPAY_LC' => BusinessValue::get(DataHelper::ZOODPAY_LC, $consumerKey),
-                        'ZOODPAY_OC' => BusinessValue::get(DataHelper::ZOODPAY_OC, $consumerKey),
+                        $consumerKey = "PAYSYSTEM_" . $payID;
+                        $merchantData = array(
+                            'merchantUserKey' => BusinessValue::get(DataHelper::ZOODPAY_USER, $consumerKey),
+                            'merchantSecret' => BusinessValue::get(DataHelper::ZOODPAY_PWD, $consumerKey),
+                            'SALT' => BusinessValue::get(DataHelper::ZOODPAY_SALT, $consumerKey),
+                            'API_URL' => BusinessValue::get(DataHelper::ZOODPAY_API_URL, $consumerKey),
+                            'API_Ver' => BusinessValue::get(DataHelper::ZOODPAY_API_VER, $consumerKey),
+                            'SITE_ID' => BusinessValue::get(DataHelper::ZOODPAY_SITE_ID, $consumerKey),
+                            'ZOODPAY_CC' => BusinessValue::get(DataHelper::ZOODPAY_CC, $consumerKey),
+                            'ZOODPAY_LC' => BusinessValue::get(DataHelper::ZOODPAY_LC, $consumerKey),
+                            'ZOODPAY_OC' => BusinessValue::get(DataHelper::ZOODPAY_OC, $consumerKey),
 
-                    );
+                        );
                         $locationArray = $zDataHelper->getDataBaseData(DataHelper::b_sale_loc_2site, DataHelper::LOCATION_ID, true, DataHelper::SITE_ID, $merchantData['SITE_ID']);
                         $locationID = $locationArray['LOCATION_ID'];
                         // Try to get the location from the CSaleLocation
@@ -853,8 +858,8 @@ class ZoodPayHandler
                                 }
                                 $res['config'] = $jsonDecode['configuration'];
                                 $res['setting'] = ['country_code' => $countryCode, 'consumer_key' => $consumerKey, 'pay_id' => $payID];
-                                $zDataHelper->deleteDatbaseTable(DataHelper::ZOODPAY_CONFIG_TABLE, false, '', '');
-                                $zDataHelper->insertIntoConfigDataBaseTable(DataHelper::ZOODPAY_CONFIG_TABLE, DataHelper::ZOODPAY_CONFIG_COLUMN, json_encode($res, JSON_UNESCAPED_UNICODE));
+                                $zDataHelper->deleteDatbaseTable(DataHelper::ZOODPAY_CONFIG_TABLE, true, DataHelper::PAYMENT_SYSTEM_ID, $payID);
+                                $zDataHelper->insertIntoConfigDataBaseTable($payID, json_encode($res, JSON_UNESCAPED_UNICODE));
                                 $zDataHelper->updateDataBaseData(DataHelper::b_sale_bizval, DataHelper::PROVIDER_VALUE, Loc::getMessage('SALE_HPS_ZP_CONFIG_FETCHED'), DataHelper::CODE_KEY, DataHelper::ZOODPAY_CONFIG_STATUS);
                                 $zDataHelper->updateDataBaseData(DataHelper::b_sale_bizval, DataHelper::PROVIDER_VALUE, "Y", DataHelper::CODE_KEY, DataHelper::ZOODPAY_CHECK_CONFIG);
 
@@ -862,26 +867,26 @@ class ZoodPayHandler
                                 //AddMessage2Log (DataHelper::ZOODPAY_CONFIG_FETCHED_MESSAGE);
                             }
                         }
-                        if(!$configFetched){
-                                $zDataHelper->updateDataBaseData(DataHelper::b_sale_bizval, DataHelper::PROVIDER_VALUE, Loc::getMessage('SALE_HPS_ZP_WRONG_CRED'), DataHelper::CODE_KEY, DataHelper::ZOODPAY_CONFIG_STATUS);
-                                $zDataHelper->updateDataBaseData(DataHelper::b_sale_bizval, DataHelper::PROVIDER_VALUE, "N", DataHelper::CODE_KEY, DataHelper::ZOODPAY_CHECK_CONFIG);
-                                $zDataHelper->replacePriceRange($payID, 0, 1);
-                                $zDataHelper->deleteDatbaseTable(DataHelper::ZOODPAY_CONFIG_TABLE, false, '', '');
+                        if (!$configFetched) {
+                            $zDataHelper->updateDataBaseData(DataHelper::b_sale_bizval, DataHelper::PROVIDER_VALUE, Loc::getMessage('SALE_HPS_ZP_WRONG_CRED'), DataHelper::CODE_KEY, DataHelper::ZOODPAY_CONFIG_STATUS);
+                            $zDataHelper->updateDataBaseData(DataHelper::b_sale_bizval, DataHelper::PROVIDER_VALUE, "N", DataHelper::CODE_KEY, DataHelper::ZOODPAY_CHECK_CONFIG);
+                            $zDataHelper->replacePriceRange($payID, 0, 1);
+                            $zDataHelper->deleteDatbaseTable(DataHelper::ZOODPAY_CONFIG_TABLE, true, DataHelper::PAYMENT_SYSTEM_ID, $payID);
                         }
 
 
-                }else {
+                    } else {
+                        $genError = true;
+                    }
+                } else {
                     $genError = true;
                 }
-            }else {
-                $genError = true;
-            }
 
-            if($genError){
+                if ($genError) {
                     $zDataHelper->updateDataBaseData(DataHelper::b_sale_bizval, DataHelper::PROVIDER_VALUE, Loc::getMessage('SALE_HPS_ZP_NO_VERIFY_CRED'), DataHelper::CODE_KEY, DataHelper::ZOODPAY_CONFIG_STATUS);
                     $zDataHelper->updateDataBaseData(DataHelper::b_sale_bizval, DataHelper::PROVIDER_VALUE, "N", DataHelper::CODE_KEY, DataHelper::ZOODPAY_CHECK_CONFIG);
+                }
             }
-
         }
 
 

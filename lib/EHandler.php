@@ -61,11 +61,12 @@ class EHandler
         try {
             $arOrder = $event->getParameter("ENTITY");
             $orderValues = $arOrder->getFieldValues();
+            $payID = $orderValues['PAY_SYSTEM_ID'];
             $shipment = $arOrder->getShipmentCollection();
             $zDataHelper = new DataHelper();
             if (($_POST['action'] == 'updatePaymentStatus') && ((!isset($_POST['refund'])) && (isset($_POST['data']['RETURN_AMOUNT'])))) {
                 global $USER;
-                $payID = "";
+
                 $refundStatus = "";
                 $transactionDetails = $zDataHelper->getTotalRowData($zDataHelper::ZOODPAY_TRANSACTIONS_TABLE, $zDataHelper::ZOODPAY_TRANSACTIONS_Merchant_Order_Ref, $arOrder->getId());
                 if (!empty($transactionDetails)) {
@@ -73,11 +74,10 @@ class EHandler
                         if ($transactionDetails['payment_id'] == $_POST['paymentId']) {
                             if (($_POST['action'] == 'updatePaymentStatus') && isset($_POST['data']['RETURN_AMOUNT'])) {
                                 if ($transactionDetails['amount'] >= floatval($_POST['data']['RETURN_AMOUNT'])) {
-                                    $queryResult = $zDataHelper->getDataBaseData(DataHelper::ZOODPAY_CONFIG_TABLE, DataHelper::ZOODPAY_CONFIG_COLUMN, false, '', '');
+                                    $queryResult = $zDataHelper->getDataBaseData(DataHelper::ZOODPAY_CONFIG_TABLE, DataHelper::ZOODPAY_CONFIG_COLUMN, true, DataHelper::PAYMENT_SYSTEM_ID, $payID);
                                     $merchantData = null;
                                     if (isset($queryResult) && $queryResult != null) {
-                                        $queryResultJsonDecode = json_decode($queryResult['Config'], true);
-                                        $payID = $queryResultJsonDecode['setting']['pay_id'];
+//                                        $queryResultJsonDecode = json_decode($queryResult['config'], true);
                                         $consumerKey = "PAYSYSTEM_" . $payID;
                                         $merchantData = array(
                                             'merchant_key' => BusinessValue::get(DataHelper::ZOODPAY_USER, $consumerKey),
@@ -217,7 +217,7 @@ class EHandler
             }
 
             if (($_POST['action'] == 'updatePaymentStatus')  ) {
-                $queryResult = $zDataHelper->getDataBaseData(DataHelper::ZOODPAY_CONFIG_TABLE, DataHelper::ZOODPAY_CONFIG_COLUMN, false, '', '');
+                $queryResult = $zDataHelper->getDataBaseData(DataHelper::ZOODPAY_CONFIG_TABLE, DataHelper::ZOODPAY_CONFIG_COLUMN, true, DataHelper::PAYMENT_SYSTEM_ID, $payID);
                 $merchantData = null;
                 $transactionDetails = $zDataHelper->getTotalRowData($zDataHelper::ZOODPAY_TRANSACTIONS_TABLE, $zDataHelper::ZOODPAY_TRANSACTIONS_Merchant_Order_Ref, $arOrder->getId());
 
@@ -226,7 +226,7 @@ class EHandler
 
                     AddMessage2Log(" Inside Query");
                     $queryResultJsonDecode = json_decode($queryResult['Config'], true);
-                    $payID = $queryResultJsonDecode['setting']['pay_id'];
+//                    $payID = $queryResultJsonDecode['setting']['pay_id'];
                     $localPayId = $arOrder->getPaySystemIdList();
                     if ((($orderValues['PAY_SYSTEM_ID'] == $payID) && $_POST['data']['ORDER_STATUS_ID_0'] == "N")  || (($orderValues['PAY_SYSTEM_ID'] == $payID) && ($orderValues['DEDUCTED'] == "N" )) || ($_POST['method'] == 'cancel') || ($orderValues['PAY_SYSTEM_ID'] == $payID && $transactionDetails['payment_id'] != $_POST['paymentId'] )) {
                         $errorMessage = Loc::getMessage('SALE_ZP_NOT_ALLOWED');
@@ -236,12 +236,12 @@ class EHandler
             }
 
             if ($_POST['action'] == 'saveStatus') {
-                $queryResult = $zDataHelper->getDataBaseData(DataHelper::ZOODPAY_CONFIG_TABLE, DataHelper::ZOODPAY_CONFIG_COLUMN, false, '', '');
+                $queryResult = $zDataHelper->getDataBaseData(DataHelper::ZOODPAY_CONFIG_TABLE, DataHelper::ZOODPAY_CONFIG_COLUMN, true, DataHelper::PAYMENT_SYSTEM_ID, $payID);
                 $merchantData = null;
                 if (isset($queryResult)) {
                     // AddMessage2Log(" Inside Query");
                     $queryResultJsonDecode = json_decode($queryResult['Config'], true);
-                    $payID = $queryResultJsonDecode['setting']['pay_id'];
+                 //   $payID = $queryResultJsonDecode['setting']['pay_id'];
                     $localPayId = $arOrder->getPaySystemIdList();
                     if ((($orderValues['PAY_SYSTEM_ID'] == $payID) && $_POST['statusId'] == "P" && $orderValues['PAYED'] == 'N')) {
                         $errorMessage = Loc::getMessage('SALE_ZP_NOT_ALLOWED');
@@ -255,11 +255,11 @@ class EHandler
                 $transactionDetails = $zDataHelper->getTotalRowData($zDataHelper::ZOODPAY_TRANSACTIONS_TABLE, $zDataHelper::ZOODPAY_TRANSACTIONS_Merchant_Order_Ref, $arOrder->getId());
                 if (!empty($transactionDetails)) {
                     //    AddMessage2Log ( " Inside Transaction"  );
-                    $queryResult = $zDataHelper->getDataBaseData(DataHelper::ZOODPAY_CONFIG_TABLE, DataHelper::ZOODPAY_CONFIG_COLUMN, false, '', '');
+                    $queryResult = $zDataHelper->getDataBaseData(DataHelper::ZOODPAY_CONFIG_TABLE, DataHelper::ZOODPAY_CONFIG_COLUMN, true, DataHelper::PAYMENT_SYSTEM_ID, $payID);
                     $merchantData = null;
                     if (isset($queryResult) && $queryResult != null) {
-                        $queryResultJsonDecode = json_decode($queryResult['Config'], true);
-                        $payID = $queryResultJsonDecode['setting']['pay_id'];
+                        $queryResultJsonDecode = json_decode($queryResult['config'], true);
+                       // $payID = $queryResultJsonDecode['setting']['pay_id'];
                         $consumerKey = "PAYSYSTEM_" . $payID;
                         $merchantData = array(
                             'merchant_key' => BusinessValue::get(DataHelper::ZOODPAY_USER, $consumerKey),
@@ -309,12 +309,12 @@ class EHandler
             if((($_POST['soa-action'] == "saveOrderAjax") || ($_POST['action'] == "saveOrderAjax")) && ($_POST['location_type'] == "code") ) {
 
                 $errMsg= "";
-                $queryResult = $zDataHelper->getDataBaseData(DataHelper::ZOODPAY_CONFIG_TABLE, DataHelper::ZOODPAY_CONFIG_COLUMN, false, '', '');
+                $queryResult = $zDataHelper->getDataBaseData(DataHelper::ZOODPAY_CONFIG_TABLE, DataHelper::ZOODPAY_CONFIG_COLUMN, true, DataHelper::PAYMENT_SYSTEM_ID, $payID);
                 $merchantData = null;
                 if (isset($queryResult)) {
                     // AddMessage2Log(" Inside Query");
                     $queryResultJsonDecode = json_decode($queryResult['Config'], true);
-                    $payID = $queryResultJsonDecode['setting']['pay_id'];
+                   // $payID = $queryResultJsonDecode['setting']['pay_id'];
 
                     if (($orderValues['PAY_SYSTEM_ID'] == $payID) && ($orderValues['DEDUCTED'] == "N")  && ($orderValues['CANCELED'] == "N") && ($orderValues['PAYED'] == "N") && ($orderValues['STATUS_ID'] == "N") ) {
 
@@ -365,7 +365,6 @@ class EHandler
 
 
 
-
         } catch (Exception $e) {
             return new EventResult(EventResult::ERROR, new ResultError($e->getMessage(), 'SALE_ORDER_PAYMENT_RETURN_NO_SUPPORTED'), 'sale');
         }
@@ -384,7 +383,12 @@ class EHandler
     function PaymentAvailability($order	, &$arUserResult, $request, &$arParams, &$arResult, &$arDeliveryServiceAll, &$arPaySystemServiceAll)
     {
         $zDataHelper = new DataHelper();
-        $zDataHelper->checkApiHealth();
+        $totalRowData = $zDataHelper->getTotalRowData(DataHelper::ZOODPAY_CONFIG_TABLE, DataHelper::PAYMENT_SYSTEM_ID, $arUserResult['PAY_SYSTEM_ID']);
+         if ($totalRowData != false)
+         {
+             $zDataHelper->checkApiHealth($arUserResult['PAY_SYSTEM_ID']);
+         }
+
     }
 
 }

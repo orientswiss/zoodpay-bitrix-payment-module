@@ -53,6 +53,7 @@ class DataHelper
     const RESULT_FILE = 'RESULT_FILE';
     const ACTION_FILE = 'ACTION_FILE';
     const PAY_SYSTEM_ID = 'PAY_SYSTEM_ID';
+    const PAYMENT_SYSTEM_ID = 'payment_system_id';
     const b_sale_bizval = 'b_sale_bizval';
     const CODE_KEY = 'CODE_KEY';
     const PROVIDER_VALUE = 'PROVIDER_VALUE';
@@ -72,7 +73,7 @@ class DataHelper
     const ZOODPAY_TRANSACTIONS_Merchant_Order_Ref = 'merchant_order_reference';
     const ZOODPAY_merchant_refund_id = 'merchant_refund_id';
     const ZOODPAY_refund_id = 'refund_id';
-    const ZOODPAY_CONFIG_COLUMN = 'Config';
+    const ZOODPAY_CONFIG_COLUMN = 'config';
     const API_CreateTransaction = '/transactions';
     const API_RefundTransaction = '/refunds';
     const API_GetConfigurations = '/configuration';
@@ -176,14 +177,16 @@ class DataHelper
      * @param $data
      * @throws ArgumentException
      */
-    public function  insertIntoConfigDataBaseTable($table, $columnToUpdate, $data){
+    public function  insertIntoConfigDataBaseTable($payid, $data){
         global $DB;
-        $strSql = "INSERT " . $table . " set " . $columnToUpdate . " = '" . $data. "'";
+        $strSql =  "INSERT " . self::ZOODPAY_CONFIG_TABLE . " (payment_system_id, config) VALUES('".$payid."', '".$data."')  ";
+//        $strSql =  "INSERT " . self::ZOODPAY_CONFIG_TABLE . " (payment_system_id, config) VALUES('".$payid."', '".$data."') on DUPLICATE KEY UPDATE `config` = '".$data ."' ";
         $results = $DB->Query($strSql);
         if($results->Fetch()){
             throw new ArgumentException('Db Query Error', 'data');
         }
         return $results->Fetch();
+
 
     }
 
@@ -194,7 +197,7 @@ class DataHelper
      */
     public function  insertIntoTranDataBaseTable($data){
         global $DB;
-        $strSql =   "INSERT  INTO  zoodpay_transactions (transaction_id, merchant_order_reference, amount, currency, status,selected_service, payment_id,refund_id,url,expiry_time,created_at) VALUES('".$data['transaction_id']."', '".$data['merchant_order_reference']."', '".$data['amount']."', '".$data['currency']."', '".$data['status']."', '".$data['selected_service']."', '".$data['payment_id']."', '".$data['refund_id']."', '".$data['url']."', '".$data['expiry_time']."', '".$data['created_at']."') on DUPLICATE KEY UPDATE `created_at` = '".$data['created_at'] ."',`url` = '".$data['url'] ."' ,`expiry_time` = '".$data['expiry_time'] ."'   ";
+        $strSql =   "INSERT  INTO  zoodpay_transactions (transaction_id, merchant_order_reference, amount, currency, status,selected_service,payment_system_id, payment_id,refund_id,url,expiry_time,created_at) VALUES('".$data['transaction_id']."', '".$data['merchant_order_reference']."', '".$data['amount']."', '".$data['currency']."', '".$data['status']."', '".$data['selected_service']."', '".$data['payment_system_id']."', '".$data['payment_id']."', '".$data['refund_id']."', '".$data['url']."', '".$data['expiry_time']."', '".$data['created_at']."') on DUPLICATE KEY UPDATE `created_at` = '".$data['created_at'] ."',`url` = '".$data['url'] ."' ,`expiry_time` = '".$data['expiry_time'] ."'   ";
         $results = $DB->Query($strSql);
         if($results->Fetch()){
             throw new ArgumentException('Db Query Error', 'data');
@@ -632,30 +635,37 @@ class DataHelper
         }
     }
 
-    public function checkApiHealth(){
-        $payID = null;
-        $queryResult = $this->getDataBaseData($this::b_sale_pay_system_action, $this::PAY_SYSTEM_ID, true, $this::ACTION_FILE, $this::paymentCode);
+    /**
+     * @param $payID
+     * @return void
+     */
+    public function checkApiHealth($payID){
+
+        $queryResult = $this->getTotalRowData($this::b_sale_pay_system_action,$this::PAY_SYSTEM_ID,$payID);
+       // $queryResult = $this->getDataBaseData($this::b_sale_pay_system_action, $this::PAY_SYSTEM_ID, true, $this::ACTION_FILE, $this::paymentCode);
         $healthy = false ;
-        if (isset($queryResult)) {
-            $payID = $queryResult['PAY_SYSTEM_ID'];
-            $consumerKey = "PAYSYSTEM_" . $payID;
-            $merchantData = array(
-                'API_URL' => BusinessValue::get($this::ZOODPAY_API_URL, $consumerKey),
-            );
-            $apiUrl = $merchantData['API_URL'] . $this::API_HealthCheck;
-            $curlResponse = $this->curlGet('', '', $apiUrl, false);
-            if (($curlResponse['statusCode'] == 200) && strpos($curlResponse['response'], 'OK')) {
-                $healthy = true;
+        if ($queryResult != false) {
+            if($queryResult['ACTION_FILE'] === "zoodpay"){
+                $consumerKey = "PAYSYSTEM_" . $payID;
+                $merchantData = array(
+                    'API_URL' => BusinessValue::get($this::ZOODPAY_API_URL, $consumerKey),
+                );
+                $apiUrl = $merchantData['API_URL'] . $this::API_HealthCheck;
+                $curlResponse = $this->curlGet('', '', $apiUrl, false);
+                if (($curlResponse['statusCode'] == 200) && strpos($curlResponse['response'], 'OK')) {
+                    $healthy = true;
+                }
             }
+
         }
 
 
         if($healthy){
             $qResult = $this->updateDataBaseData($this::b_sale_bizval, $this::PROVIDER_VALUE, Loc::getMessage('SALE_HPS_ZP_API_HEALTHY'), $this::CODE_KEY, $this::ZOODPAY_API_STATUS);
             $this->updateDataBaseData($this::b_sale_bizval, $this::PROVIDER_VALUE, "Y", $this::CODE_KEY, $this::ZOODPAY_CHECK_HEALTHY);
-            $configResponse = $this->getDataBaseData($this::ZOODPAY_CONFIG_TABLE, $this::ZOODPAY_CONFIG_COLUMN, false, '', '');
-            if(isset($configResponse['Config'])){
-                $config = (json_decode($configResponse['Config'], true)['config']);
+            $configResponse = $this->getDataBaseData($this::ZOODPAY_CONFIG_TABLE, $this::ZOODPAY_CONFIG_COLUMN, true, $this::PAYMENT_SYSTEM_ID,  $payID);
+            if(isset($configResponse['config'])){
+                $config = (json_decode($configResponse['config'], true)['config']);
                 $minArray = [];
                 $maxArray = [];
                 foreach ($config as $key => $value) {
@@ -687,8 +697,9 @@ class DataHelper
             //   AddMessage2Log (DataHelper::ZOODPAY_API_DOWN_MESSAGE);
             $this->updateDataBaseData($this::b_sale_bizval, $this::PROVIDER_VALUE, "N", $this::CODE_KEY, $this::ZOODPAY_CHECK_HEALTHY);
 
-            $configResponse = $this->getDataBaseData($this::ZOODPAY_CONFIG_TABLE, $this::ZOODPAY_CONFIG_COLUMN, false, '', '');
-            if(isset($configResponse['Config'])){
+            $configResponse = $this->getDataBaseData($this::ZOODPAY_CONFIG_TABLE, $this::ZOODPAY_CONFIG_COLUMN, true, $this::PAYMENT_SYSTEM_ID,  $payID);
+
+            if(isset($configResponse['config'])){
                 $this->updateDataBaseData($this::b_sale_bizval, $this::PROVIDER_VALUE, Loc::getMessage('SALE_HPS_ZP_CONFIG'), $this::CODE_KEY, $this::ZOODPAY_CONFIG_STATUS);
                 $this->updateDataBaseData($this::b_sale_bizval, $this::PROVIDER_VALUE, "Y", $this::CODE_KEY, $this::ZOODPAY_CHECK_CONFIG);
 
@@ -705,6 +716,5 @@ class DataHelper
 
         }
     }
-
 
 }
